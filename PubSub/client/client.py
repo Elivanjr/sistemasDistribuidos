@@ -35,7 +35,6 @@ def assinarTopico(clienteSocket):
 
 def publicarEvento(clienteSocket, clienteId):
     topico = input("Tópico: ")
-    # bota um se nao receber nada assim como a linha 36
     if not topico:
         print("Cade o topico rapaz?")
         return
