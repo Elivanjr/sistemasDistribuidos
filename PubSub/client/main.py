@@ -1,8 +1,10 @@
 import socket
 import json
 from datetime import datetime
+import threading
 
-#acao no json vai ser: publica, assina, remove, sai
+# acao no json vai ser: publica, assina, remove, sai
+
 
 def menu():
     print("\nCliente Pub/Sub")
@@ -11,7 +13,7 @@ def menu():
     print("3) Assinar Tópico")
     print("4) Remover Assinatura")
     print("5) Encerrar Conexão")
-    print("0) Sair")    
+    print("0) Sair")
     return input("Escolha uma opção: ").strip()
 
 
@@ -24,6 +26,7 @@ def conectarServidor():
         cliente.connect((ip, porta))
         volta = recebeMensagem(cliente)
         uuid = volta["uuid"]
+        threading.Thread(target=ouveServidor, args=(cliente,), daemon=True).start()
         print(f"Deu bom, logo UUID -> {uuid}")
         return cliente, uuid
 
@@ -47,11 +50,11 @@ def assinarTopico(clienteSocket):
 
 def removeAssinatura(clienteSocket):
     topic = input("Remover assinatura de que tópico? ")
-    
+
     if not topic:
         print("Cade o topico rapaz...")
         return
-    
+
     mensagem = {"acao": "remove", "topico": topic}
     enviaMensagem(clienteSocket, mensagem)
     print("Assinatura removida.")
@@ -100,6 +103,18 @@ def enviaMensagem(clienteSocket, contexto):
     clienteSocket.sendall(dados)
 
 
+def ouveServidor(clienteSocket):
+    try:
+        while True:
+            msg = recebeMensagem(clienteSocket)
+            if msg.get("tipo") == "evento":
+                print(
+                    f"\n[{msg['timestamp']}] {msg['topico']} ({msg['author_id'][:8]}): {msg['descricao']}"
+                )
+    except (ConnectionError, OSError, ValueError):
+        print("\nConexão com o servidor perdida.")
+
+
 def main():
     sock = None
     clienteId = None
@@ -130,11 +145,11 @@ def main():
                 encerrarConexao(sock)
                 sock = None
                 clienteId = None
-        
+
         elif opcao == "0":
             print("Vai pela sombra")
             break
 
-        
+
 if __name__ == "__main__":
     main()
